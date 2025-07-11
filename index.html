@@ -5,13 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OSRS Crafting Profit Calculator</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    h1, h2, h3 { color: #2c3e50; }
-    .profit { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
-    .positive { color: green; }
-    .negative { color: red; }
-    textarea { width: 100%; font-family: monospace; margin-top: 10px; }
-    button { margin-top: 10px; padding: 8px 16px; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+    }
+    h1, h2, h3 {
+      color: #ffffff;
+    }
+    .profit {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #2b2b2b;
+    }
+    .positive {
+      color: #00ff00;
+    }
+    .negative {
+      color: #ff5555;
+    }
+    textarea {
+      width: 100%;
+      font-family: monospace;
+      margin-top: 10px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #666;
+    }
   </style>
 </head>
 <body>
@@ -24,84 +61,56 @@
   <button onclick="addCustomRecipe()">Add Custom Recipe</button>
 
   <script>
-    // Updated cache URLs (your GitHub raw JSON cache)
     const baseCacheUrl = 'https://raw.githubusercontent.com/KeelanRobertson/osrs/main/data/';
     const mappingUrl = baseCacheUrl + 'mapping.json';
-    const latestUrl = baseCacheUrl + 'latest.json';
-    const fiveMinUrl = baseCacheUrl + '5m.json';
-    const tenMinUrl = baseCacheUrl + '10m.json';
-    const thirtyMinUrl = baseCacheUrl + '30m.json';
-    const oneHourUrl = baseCacheUrl + '1h.json';
+    const cacheUrls = ['latest.json', '5m.json', '10m.json', '30m.json', '1h.json'].map(name => baseCacheUrl + name);
 
     let itemsById = {};
     let itemsByName = {};
-    
     let recipes = [];
-    
+
     async function loadRecipes() {
       const res = await fetch('https://raw.githubusercontent.com/KeelanRobertson/osrs/main/data/recipes.json');
       recipes = await res.json();
     }
 
     async function fetchData() {
-      // Fetch all price data from the cache
-      const [mapping, latest, fiveMin, tenMin, thirtyMin, oneHour] = await Promise.all([
-        fetch(mappingUrl).then(res => res.json()),
-        fetch(latestUrl).then(res => res.json()),
-        fetch(fiveMinUrl).then(res => res.json()),
-        fetch(tenMinUrl).then(res => res.json()),
-        fetch(thirtyMinUrl).then(res => res.json()),
-        fetch(oneHourUrl).then(res => res.json()),
-      ]);
+      const mapping = await fetch(mappingUrl).then(res => res.json());
+      const priceData = await Promise.all(cacheUrls.map(url => fetch(url).then(res => res.json())));
 
-      // Reset data holders
       itemsById = {};
       itemsByName = {};
 
-      // Build items indexed by id and name, merging data for each item
       mapping.forEach(item => {
         const id = item.id;
+        const allPrices = priceData.map(d => d.data[id]).filter(Boolean);
+        const highPrices = allPrices.map(d => d.avgHighPrice || d.high).filter(Boolean);
+        const lowPrices = allPrices.map(d => d.avgLowPrice || d.low).filter(Boolean);
+        const latest = priceData[0].data[id];
+
         itemsById[id] = {
           ...item,
-          latest: latest.data[id],
-          fiveMin: fiveMin.data[id],
-          tenMin: tenMin.data[id],
-          thirtyMin: thirtyMin.data[id],
-          oneHour: oneHour.data[id]
+          maxHigh: Math.max(...highPrices, 0),
+          minLow: Math.min(...lowPrices, Infinity),
+          currentHigh: latest?.high || 0,
+          currentLow: latest?.low || 0
         };
         itemsByName[item.name.toLowerCase()] = itemsById[id];
       });
     }
 
-    // Gets price for an item by type of pricing
-    // type can be 'latest', 'fiveMin', 'tenMin', 'thirtyMin', 'oneHour'
-    // priceType: which price to get: default 'high', fallback to 'avgHighPrice' for averages
-    function getPrice(itemName, type = 'latest', priceType = 'high') {
-      const item = itemsByName[itemName.toLowerCase()];
-      if (!item) return 0;
-
-      const data = item[type];
-      if (!data) return 0;
-
-      // Some fields use different naming for averages
-      if (type === 'latest') {
-        return data[priceType] || 0;
-      } else {
-        // For averages, common keys: avgHighPrice, avgLowPrice
-        if (priceType === 'high') return data.avgHighPrice || 0;
-        if (priceType === 'low') return data.avgLowPrice || 0;
-        return 0;
-      }
-    }
-
-    function calculateProfit(recipe, priceType = 'latest') {
-      const outputPrice = getPrice(recipe.output.item, priceType, 'high') * recipe.output.quantity;
+    function calculateProfit(recipe) {
+      const outputItem = itemsByName[recipe.output.item.toLowerCase()];
+      const outputPrice = outputItem?.maxHigh * recipe.output.quantity || 0;
 
       const inputDetails = recipe.inputs.map(input => {
-        const price = getPrice(input.item, priceType, 'high');
+        const inputItem = itemsByName[input.item.toLowerCase()];
+        const price = inputItem?.minLow || 0;
+        const current = inputItem?.currentLow || 0;
         return {
           ...input,
           price,
+          current,
           total: price * input.quantity
         };
       });
@@ -109,28 +118,15 @@
       const inputCost = inputDetails.reduce((sum, i) => sum + i.total, 0);
       const profit = outputPrice - inputCost;
 
-      // Calculate required sell price and required buy prices for inputs
-      // The required sell price per output item to achieve the profit:
-      const requiredSellPricePerOutput = Math.ceil((inputCost + profit) / recipe.output.quantity);
-
-      // Calculate max buy price for each input to achieve the same profit given the required sell price
-      const requiredBuyPrices = inputDetails.map((inputDetail, _, arr) => {
-        const otherInputsCost = inputCost - inputDetail.total;
-        const needed = (requiredSellPricePerOutput * recipe.output.quantity) - otherInputsCost;
-        const maxBuyPrice = Math.floor(needed / inputDetail.quantity);
-        return {
-          item: inputDetail.item,
-          price: maxBuyPrice
-        };
-      });
-
       return {
         recipeName: recipe.name,
-        outputPrice,
+        outputItem: recipe.output.item,
+        outputQuantity: recipe.output.quantity,
+        outputPrice: outputItem?.maxHigh || 0,
+        currentOutputPrice: outputItem?.currentHigh || 0,
+        inputDetails,
         inputCost,
-        profit,
-        requiredSellPrice: requiredSellPricePerOutput,
-        requiredBuyPrices
+        profit
       };
     }
 
@@ -139,16 +135,18 @@
       container.innerHTML = "";
 
       recipes.forEach(recipe => {
-        const current = calculateProfit(recipe, "latest");
+        const result = calculateProfit(recipe);
         const div = document.createElement("div");
         div.className = "profit";
         div.innerHTML = `
           <h3>${recipe.name}</h3>
-          <p><strong>Current Profit:</strong> <span class="${current.profit >= 0 ? 'positive' : 'negative'}">${current.profit.toLocaleString()} gp</span></p>
-          <p><strong>To achieve this profit, you must:</strong></p>
+          <p><strong>Current Profit:</strong> <span class="${result.profit >= 0 ? 'positive' : 'negative'}">${result.profit.toLocaleString()} gp</span></p>
+          <p><strong>Sell Price of ${result.outputItem}:</strong> ${result.outputPrice.toLocaleString()} gp <em>(Current: ${result.currentOutputPrice.toLocaleString()} gp)</em></p>
+          <p><strong>Input Costs:</strong></p>
           <ul>
-            <li>Sell <strong>${recipe.output.item}</strong> for at least <strong>${current.requiredSellPrice.toLocaleString()} gp</strong></li>
-            ${current.requiredBuyPrices.map(b => `<li>Buy <strong>${b.item}</strong> at or below <strong>${b.price.toLocaleString()} gp</strong></li>`).join('')}
+            ${result.inputDetails.map(i =>
+              `<li>${i.quantity} x ${i.item} @ ${i.price.toLocaleString()} gp <em>(Current: ${i.current.toLocaleString()} gp)</em> = ${i.total.toLocaleString()} gp</li>`
+            ).join('')}
           </ul>
         `;
         container.appendChild(div);
@@ -183,7 +181,6 @@
       displayResults();
     }
 
-    // Initial load
     refreshData();
   </script>
 </body>
