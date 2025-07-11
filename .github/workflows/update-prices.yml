@@ -1,0 +1,36 @@
+name: Update OSRS Prices
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Runs every 5 minutes
+  workflow_dispatch:
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch and save OSRS price data
+        run: |
+          mkdir -p data
+          curl -s https://prices.runescape.wiki/api/v1/osrs/mapping -o data/mapping.json
+          curl -s https://prices.runescape.wiki/api/v1/osrs/latest -o data/latest.json
+          curl -s https://prices.runescape.wiki/api/v1/osrs/5m -o data/5m.json
+          curl -s https://prices.runescape.wiki/api/v1/osrs/10m -o data/10m.json
+          curl -s https://prices.runescape.wiki/api/v1/osrs/30m -o data/30m.json
+          curl -s https://prices.runescape.wiki/api/v1/osrs/1h -o data/1h.json
+
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update OSRS price data"
+            git push
+          fi
