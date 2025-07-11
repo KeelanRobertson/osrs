@@ -49,6 +49,43 @@
     button:hover {
       background-color: #666;
     }
+    input[type="text"], input[type="number"] {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 5px;
+    }
+    #skills-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 800px;
+    }
+    #skills-grid div {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    #skills-modal {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2b2b2b;
+      color: #f0f0f0;
+      border: 1px solid #555;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 999;
+      max-height: 80vh;
+      overflow-y: auto;
+      width: 90%;
+      max-width: 850px;
+    }
   </style>
 </head>
 <body>
@@ -61,9 +98,20 @@
   <textarea id="custom-recipe" rows="5" placeholder="Example:\n1 Runite ore\n8 Coal\n= 1 Runite bar"></textarea><br>
   <button onclick="addCustomRecipe()">Add Custom Recipe</button>
 
-  <div id="skills-modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#2b2b2b; color:#f0f0f0; border:1px solid #555; padding:20px; border-radius:10px; z-index:999;">
+  <div id="skills-modal">
     <h2>Enter Skill Levels</h2>
-    <div id="skills-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; max-width:600px;"></div>
+    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
+      <input
+        type="text"
+        id="rsn"
+        placeholder="Enter your character name"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter') fetchHiscores()"
+        style="flex: 1;"
+      />
+      <button onclick="fetchHiscores()">Submit</button>
+    </div>
+    <div id="skills-grid"></div>
     <button onclick="toggleSkills()">Close</button>
   </div>
 
@@ -199,22 +247,17 @@
       container.innerHTML = "";
       let total = 0;
 
-      skillNames.forEach((skill, index) => {
+      skillNames.forEach(skill => {
         const input = document.createElement("input");
         input.type = "number";
         input.min = 1;
         input.max = 99;
         input.value = 99;
         input.style.width = "100%";
-        input.style.background = "#333";
-        input.style.color = "#fff";
-        input.style.border = "1px solid #555";
         input.dataset.skill = skill;
         input.addEventListener("input", updateTotalLevel);
         const label = document.createElement("label");
         label.textContent = skill;
-        label.style.fontSize = "14px";
-        label.style.display = "block";
         const wrapper = document.createElement("div");
         wrapper.appendChild(label);
         wrapper.appendChild(input);
@@ -222,19 +265,20 @@
         total += 99;
       });
 
-      const label = document.createElement("label");
-      label.textContent = "Total Level";
-      label.style.fontSize = "14px";
-      label.style.display = "block";
+      // Add total level box in last grid cell
+      const totalLabel = document.createElement("label");
+      totalLabel.textContent = "Total Level";
       const totalBox = document.createElement("div");
       totalBox.id = "total-level";
       totalBox.style.padding = "6px";
       totalBox.style.border = "1px solid #555";
       totalBox.style.background = "#333";
       totalBox.style.textAlign = "center";
+      totalBox.style.color = "#fff";
+      totalBox.style.fontWeight = "bold";
       totalBox.textContent = total;
       const totalWrapper = document.createElement("div");
-      totalWrapper.appendChild(label);
+      totalWrapper.appendChild(totalLabel);
       totalWrapper.appendChild(totalBox);
       container.appendChild(totalWrapper);
     }
@@ -248,6 +292,65 @@
         total += val;
       });
       document.getElementById("total-level").textContent = total;
+    }
+
+    async function fetchHiscores() {
+      const rsn = document.getElementById("rsn").value.trim();
+      if (!rsn) return;
+      try {
+        const res = await fetch(`https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(rsn)}`);
+        if (!res.ok) throw new Error("Player not found");
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+        // lines 1-23 correspond to skills in order: Overall, Attack, Defence, Strength, Hitpoints, Ranged, Prayer, Magic, Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting, Smithing, Mining, Herblore, Agility, Thieving, Slayer, Farming, Runecrafting, Hunter, Construction
+        // We map to our skillNames (23 total), ignoring overall (line 0)
+        // Our skillNames order: Attack(0), Hitpoints(1), Mining(2), Strength(3), Agility(4), Smithing(5), Defence(6), Herblore(7), Fishing(8), Ranged(9), Thieving(10), Cooking(11), Prayer(12), Crafting(13), Firemaking(14), Magic(15), Fletching(16), Woodcutting(17), Runecraft(18), Slayer(19), Farming(20), Construction(21), Hunter(22)
+        // Hiscore line indices: Attack(1), Defence(2), Strength(3), Hitpoints(4), Ranged(5), Prayer(6), Magic(7), Cooking(8), Woodcutting(9), Fletching(10), Fishing(11), Firemaking(12), Crafting(13), Smithing(14), Mining(15), Herblore(16), Agility(17), Thieving(18), Slayer(19), Farming(20), Runecrafting(21), Hunter(22), Construction(23)
+        // We'll build a map from hiscore line index to skillNames index:
+        const hiscoreIndices = {
+          1: 0,  // Attack -> Attack
+          4: 1,  // Hitpoints -> Hitpoints
+          15: 2, // Mining -> Mining
+          3: 3,  // Strength -> Strength
+          17: 4, // Agility -> Agility
+          14: 5, // Smithing -> Smithing
+          2: 6,  // Defence -> Defence
+          16: 7, // Herblore -> Herblore
+          11: 8, // Fishing -> Fishing
+          5: 9,  // Ranged -> Ranged
+          18: 10, // Thieving -> Thieving
+          8: 11,  // Cooking -> Cooking
+          6: 12,  // Prayer -> Prayer
+          13: 13, // Crafting -> Crafting
+          12: 14, // Firemaking -> Firemaking
+          7: 15,  // Magic -> Magic
+          10: 16, // Fletching -> Fletching
+          9: 17,  // Woodcutting -> Woodcutting
+          21: 18, // Runecrafting -> Runecraft
+          19: 19, // Slayer -> Slayer
+          20: 20, // Farming -> Farming
+          23: 21, // Construction -> Construction
+          22: 22  // Hunter -> Hunter
+        };
+        const levels = new Array(skillNames.length).fill(1);
+
+        for (let i = 1; i <= 23; i++) {
+          const parts = lines[i].split(",");
+          const level = Math.min(parseInt(parts[1]) || 1, 99);
+          const idx = hiscoreIndices[i];
+          if (idx !== undefined) {
+            levels[idx] = level;
+          }
+        }
+
+        const inputs = document.querySelectorAll("#skills-grid input");
+        inputs.forEach((input, idx) => {
+          input.value = levels[idx];
+        });
+        updateTotalLevel();
+      } catch (e) {
+        alert("Failed to fetch hiscores. Make sure the username is valid.");
+      }
     }
 
     async function refreshData() {
