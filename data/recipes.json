@@ -5,7 +5,10 @@
     "inputs": [
       { "item": "Runite ore", "quantity": 1 },
       { "item": "Coal", "quantity": 8 }
-    ]
+    ],
+    "requiredSkills": {
+      "Smithing": 85
+    }
   },
   {
     "name": "Steel Bar",
@@ -13,7 +16,10 @@
     "inputs": [
       { "item": "Iron ore", "quantity": 1 },
       { "item": "Coal", "quantity": 2 }
-    ]
+    ],
+    "requiredSkills": {
+      "Smithing": 30
+    }
   },
   {
     "name": "Bronze Bar",
@@ -28,7 +34,10 @@
     "output": { "item": "Magic shortbow (u)", "quantity": 1 },
     "inputs": [
       { "item": "Magic logs", "quantity": 1 }
-    ]
+    ],
+    "requiredSkills": {
+      "Fletching": 80
+    }
   },
   {
     "name": "Magic Shortbow (Strung)",
@@ -36,6 +45,9 @@
     "inputs": [
       { "item": "Magic shortbow (u)", "quantity": 1 },
       { "item": "Bow string", "quantity": 1 }
-    ]
+    ],
+    "requiredSkills": {
+      "Fletching": 80
+    }
   }
 ]
