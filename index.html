@@ -35,25 +35,13 @@
 
     let itemsById = {};
     let itemsByName = {};
-
-    const recipes = [
-      {
-        name: "Runite Bar",
-        output: { item: "Runite bar", quantity: 1 },
-        inputs: [
-          { item: "Runite ore", quantity: 1 },
-          { item: "Coal", quantity: 8 },
-        ]
-      },
-      {
-        name: "Steel Bar",
-        output: { item: "Steel bar", quantity: 1 },
-        inputs: [
-          { item: "Iron ore", quantity: 1 },
-          { item: "Coal", quantity: 2 },
-        ]
-      }
-    ];
+    
+    let recipes = [];
+    
+    async function loadRecipes() {
+      const res = await fetch('https://raw.githubusercontent.com/KeelanRobertson/osrs/main/data/recipes.json');
+      recipes = await res.json();
+    }
 
     async function fetchData() {
       // Fetch all price data from the cache
@@ -191,7 +179,7 @@
     }
 
     async function refreshData() {
-      await fetchData();
+      await Promise.all([fetchData(), loadRecipes()]);
       displayResults();
     }
 
