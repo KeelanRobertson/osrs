@@ -54,11 +54,18 @@
 <body>
   <h1>OSRS Crafting Profit Calculator</h1>
   <button onclick="refreshData()">Refresh Prices</button>
+  <button onclick="toggleSkills()">Skills</button>
   <div id="results"></div>
 
   <h2>Custom Recipe</h2>
   <textarea id="custom-recipe" rows="5" placeholder="Example:\n1 Runite ore\n8 Coal\n= 1 Runite bar"></textarea><br>
   <button onclick="addCustomRecipe()">Add Custom Recipe</button>
+
+  <div id="skills-modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#2b2b2b; color:#f0f0f0; border:1px solid #555; padding:20px; border-radius:10px; z-index:999;">
+    <h2>Enter Skill Levels</h2>
+    <div id="skills-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; max-width:600px;"></div>
+    <button onclick="toggleSkills()">Close</button>
+  </div>
 
   <script>
     const baseCacheUrl = 'https://raw.githubusercontent.com/KeelanRobertson/osrs/main/data/';
@@ -176,12 +183,80 @@
       displayResults();
     }
 
+    const skillNames = [
+      "Attack", "Hitpoints", "Mining", "Strength", "Agility", "Smithing", "Defence", "Herblore",
+      "Fishing", "Ranged", "Thieving", "Cooking", "Prayer", "Crafting", "Firemaking", "Magic",
+      "Fletching", "Woodcutting", "Runecraft", "Slayer", "Farming", "Construction", "Hunter"
+    ];
+
+    function toggleSkills() {
+      const modal = document.getElementById("skills-modal");
+      modal.style.display = modal.style.display === "none" ? "block" : "none";
+    }
+
+    function createSkillInputs() {
+      const container = document.getElementById("skills-grid");
+      container.innerHTML = "";
+      let total = 0;
+
+      skillNames.forEach((skill, index) => {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = 1;
+        input.max = 99;
+        input.value = 99;
+        input.style.width = "100%";
+        input.style.background = "#333";
+        input.style.color = "#fff";
+        input.style.border = "1px solid #555";
+        input.dataset.skill = skill;
+        input.addEventListener("input", updateTotalLevel);
+        const label = document.createElement("label");
+        label.textContent = skill;
+        label.style.fontSize = "14px";
+        label.style.display = "block";
+        const wrapper = document.createElement("div");
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        container.appendChild(wrapper);
+        total += 99;
+      });
+
+      const label = document.createElement("label");
+      label.textContent = "Total Level";
+      label.style.fontSize = "14px";
+      label.style.display = "block";
+      const totalBox = document.createElement("div");
+      totalBox.id = "total-level";
+      totalBox.style.padding = "6px";
+      totalBox.style.border = "1px solid #555";
+      totalBox.style.background = "#333";
+      totalBox.style.textAlign = "center";
+      totalBox.textContent = total;
+      const totalWrapper = document.createElement("div");
+      totalWrapper.appendChild(label);
+      totalWrapper.appendChild(totalBox);
+      container.appendChild(totalWrapper);
+    }
+
+    function updateTotalLevel() {
+      const inputs = document.querySelectorAll("#skills-grid input");
+      let total = 0;
+      inputs.forEach(input => {
+        let val = Math.min(parseInt(input.value) || 1, 99);
+        input.value = val;
+        total += val;
+      });
+      document.getElementById("total-level").textContent = total;
+    }
+
     async function refreshData() {
       await Promise.all([fetchData(), loadRecipes()]);
       displayResults();
     }
 
     refreshData();
+    createSkillInputs();
   </script>
 </body>
 </html>
