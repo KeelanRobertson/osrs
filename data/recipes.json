@@ -14,5 +14,13 @@
       { "item": "Iron ore", "quantity": 1 },
       { "item": "Coal", "quantity": 2 }
     ]
+  },
+  {
+    "name": "Bronze Bar",
+    "output": { "item": "Bronze Bar", "wantity":1 },
+    "inputs": [
+      { "item": "Copper Ore", "quantity": 1 }
+      { "item": "Tin Ore", "quantity": 1 }
+    ]
   }
 ]
