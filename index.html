@@ -1,10 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My GitHub Page</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSRS Crafting Profit Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    h1, h2, h3 { color: #2c3e50; }
+    .profit { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+    .positive { color: green; }
+    .negative { color: red; }
+    textarea { width: 100%; font-family: monospace; margin-top: 10px; }
+    button { margin-top: 10px; padding: 8px 16px; font-size: 16px; }
+  </style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <p>This is my first GitHub webpage.</p>
+  <h1>OSRS Crafting Profit Calculator</h1>
+  <button onclick="refreshData()">Refresh Prices</button>
+  <div id="results"></div>
+
+  <h2>Custom Recipe</h2>
+  <textarea id="custom-recipe" rows="5" placeholder="Example:\n1 Runite ore\n8 Coal\n= 1 Runite bar"></textarea><br>
+  <button onclick="addCustomRecipe()">Add Custom Recipe</button>
+
+  <script>
+    const mappingUrl = 'https://prices.runescape.wiki/api/v1/osrs/mapping';
+    const latestUrl = 'https://prices.runescape.wiki/api/v1/osrs/latest';
+    const fiveMinUrl = 'https://prices.runescape.wiki/api/v1/osrs/5m';
+
+    let itemsById = {};
+    let itemsByName = {};
+
+    const recipes = [
+      {
+        name: "Runite Bar",
+        output: { item: "Runite bar", quantity: 1 },
+        inputs: [
+          { item: "Runite ore", quantity: 1 },
+          { item: "Coal", quantity: 8 },
+        ]
+      },
+      {
+        name: "Steel Bar",
+        output: { item: "Steel bar", quantity: 1 },
+        inputs: [
+          { item: "Iron ore", quantity: 1 },
+          { item: "Coal", quantity: 2 },
+        ]
+      }
+    ];
+
+    async function fetchData() {
+      const [mapping, latest, fiveMin] = await Promise.all([
+        fetch(mappingUrl).then(res => res.json()),
+        fetch(latestUrl).then(res => res.json()).then(d => d.data),
+        fetch(fiveMinUrl).then(res => res.json()).then(d => d.data),
+      ]);
+
+      mapping.forEach(item => {
+        itemsById[item.id] = {
+          ...item,
+          latest: latest[item.id],
+          fiveMin: fiveMin[item.id],
+        };
+        itemsByName[item.name.toLowerCase()] = itemsById[item.id];
+      });
+    }
+
+    function getPrice(itemName, type = 'latest') {
+      const item = itemsByName[itemName.toLowerCase()];
+      if (!item) return 0;
+      return type === 'fiveMin'
+        ? item.fiveMin?.avgHighPrice || 0
+        : item.latest?.high || 0;
+    }
+
+    function calculateProfit(recipe, type = 'latest') {
+      const outputValue = getPrice(recipe.output.item, type) * recipe.output.quantity;
+      const inputCost = recipe.inputs.reduce((sum, input) => {
+        return sum + getPrice(input.item, type) * input.quantity;
+      }, 0);
+      return {
+        recipeName: recipe.name,
+        outputValue,
+        inputCost,
+        profit: outputValue - inputCost
+      };
+    }
+
+    function displayResults() {
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+      recipes.forEach(recipe => {
+        const current = calculateProfit(recipe, "latest");
+        const avg = calculateProfit(recipe, "fiveMin");
+        const div = document.createElement("div");
+        div.className = "profit";
+        div.innerHTML = `
+          <h3>${recipe.name}</h3>
+          <p><strong>Current Profit:</strong> <span class="${current.profit >= 0 ? 'positive' : 'negative'}">${current.profit.toLocaleString()} gp</span></p>
+          <p><strong>5m Avg Profit:</strong> <span class="${avg.profit >= 0 ? 'positive' : 'negative'}">${avg.profit.toLocaleString()} gp</span></p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function parseCustomRecipe() {
+      const lines = document.getElementById("custom-recipe").value.trim().split("\n");
+      const inputs = [];
+      let output = null;
+      for (const line of lines) {
+        if (line.includes("=")) {
+          const [_, right] = line.split("=");
+          const [qty, ...name] = right.trim().split(" ");
+          output = { item: name.join(" "), quantity: parseInt(qty) };
+        } else {
+          const [qty, ...name] = line.trim().split(" ");
+          inputs.push({ item: name.join(" "), quantity: parseInt(qty) });
+        }
+      }
+      return { name: "Custom Recipe", inputs, output };
+    }
+
+    function addCustomRecipe() {
+      const custom = parseCustomRecipe();
+      recipes.push(custom);
+      displayResults();
+    }
+
+    async function refreshData() {
+      await fetchData();
+      displayResults();
+    }
+
+    refreshData();
+  </script>
 </body>
 </html>
