@@ -300,56 +300,47 @@
     async function fetchHiscores() {
       const rsn = document.getElementById("rsn").value.trim();
       if (!rsn) return;
+    
       try {
-        const url = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.json?player=${encodeURIComponent(rsn)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch");
+        const res = await fetch(`https://api.wiseoldman.net/v2/players/${encodeURIComponent(rsn)}`);
         const data = await res.json();
-
-        // Map of skill names returned by API:
-        // Overall, Attack, Defence, Strength, Hitpoints, Ranged, Prayer, Magic,
-        // Cooking, Woodcutting, Fletching, Fishing, Firemaking, Crafting,
-        // Smithing, Mining, Herblore, Agility, Thieving, Slayer, Farming,
-        // Runecrafting, Hunter, Construction
-
-        // We want to map our skillNames order:
-        // "Attack", "Hitpoints", "Mining", "Strength", "Agility", "Smithing", "Defence", "Herblore",
-        // "Fishing", "Ranged", "Thieving", "Cooking", "Prayer", "Crafting", "Firemaking", "Magic",
-        // "Fletching", "Woodcutting", "Runecraft", "Slayer", "Farming", "Construction", "Hunter"
-
-        // Define the order of skills in the API for easy lookup
-        const apiSkillOrder = [
-          "Overall","Attack","Defence","Strength","Hitpoints","Ranged","Prayer","Magic",
-          "Cooking","Woodcutting","Fletching","Fishing","Firemaking","Crafting",
-          "Smithing","Mining","Herblore","Agility","Thieving","Slayer","Farming",
-          "Runecrafting","Hunter","Construction"
-        ];
-
-        // Create a lookup for level by skill name
-        const levelsBySkill = {};
-        apiSkillOrder.forEach(skill => {
-          const entry = data[skill];
-          if(entry) {
-            levelsBySkill[skill.toLowerCase()] = Math.min(entry.level, 99);
-          }
-        });
-
-        // Helper to get level by our skill name mapping, note that "Runecraft" in our list is "Runecrafting" in API
-        function getLevel(skill) {
-          if (skill.toLowerCase() === "runecraft") return levelsBySkill["runecrafting"] || 99;
-          return levelsBySkill[skill.toLowerCase()] || 99;
+        const skills = data.latestSnapshot.data.skills;
+    
+        const mapping = {
+          attack: "Attack",
+          defence: "Defence",
+          strength: "Strength",
+          hitpoints: "Hitpoints",
+          ranged: "Ranged",
+          prayer: "Prayer",
+          magic: "Magic",
+          cooking: "Cooking",
+          woodcutting: "Woodcutting",
+          fletching: "Fletching",
+          fishing: "Fishing",
+          firemaking: "Firemaking",
+          crafting: "Crafting",
+          smithing: "Smithing",
+          mining: "Mining",
+          herblore: "Herblore",
+          agility: "Agility",
+          thieving: "Thieving",
+          slayer: "Slayer",
+          farming: "Farming",
+          runecrafting: "Runecraft",
+          hunter: "Hunter",
+          construction: "Construction"
+        };
+    
+        for (const [apiName, label] of Object.entries(mapping)) {
+          const level = skills[apiName]?.level ?? 1;
+          const input = document.querySelector(`#skills-grid input[data-skill="${label}"]`);
+          if (input) input.value = Math.min(level, 99);
         }
-
-        // Fill inputs
-        const inputs = document.querySelectorAll("#skills-grid input");
-        inputs.forEach(input => {
-          const skill = input.dataset.skill;
-          input.value = getLevel(skill);
-        });
-
+    
         updateTotalLevel();
       } catch (e) {
-        alert("Failed to fetch hiscores. Make sure the username is valid.");
+        alert("Failed to fetch hiscores from Wise Old Man");
       }
     }
 
