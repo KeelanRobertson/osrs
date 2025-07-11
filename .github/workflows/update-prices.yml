@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch and save OSRS price data
         run: |
@@ -22,15 +24,16 @@ jobs:
           curl -s https://prices.runescape.wiki/api/v1/osrs/30m -o data/30m.json
           curl -s https://prices.runescape.wiki/api/v1/osrs/1h -o data/1h.json
 
-
       - name: Commit and push if changed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/*.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Update OSRS price data"
-            git push
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:${{ github.ref }}
           fi
