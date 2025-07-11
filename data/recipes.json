@@ -22,5 +22,20 @@
       { "item": "Copper Ore", "quantity": 1 },
       { "item": "Tin Ore", "quantity": 1 }
     ]
+  },
+  {
+    "name": "Magic Shortbow (Unstrung)",
+    "output": { "item": "Magic shortbow (u)", "quantity": 1 },
+    "inputs": [
+      { "item": "Magic logs", "quantity": 1 }
+    ]
+  },
+  {
+    "name": "Magic Shortbow (Strung)",
+    "output": { "item": "Magic shortbow", "quantity": 1 },
+    "inputs": [
+      { "item": "Magic shortbow (u)", "quantity": 1 },
+      { "item": "Bow string", "quantity": 1 }
+    ]
   }
 ]
