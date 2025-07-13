@@ -26,7 +26,7 @@ jobs:
           curl -s https://prices.runescape.wiki/api/v1/osrs/6h -o data/6h.json
           curl -s https://prices.runescape.wiki/api/v1/osrs/24h -o data/24h.json
           
-          date -u +"%Y-%m-%dT%H:%M:%SZ" > data/last_fetched.txt
+          echo "{\"lastFetched\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" > data/last_fetched.json
 
       - name: Commit and push if changed
         env:
