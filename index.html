@@ -105,30 +105,40 @@
   </style>
 </head>
 <body>
+  <div id="last-refresh-info" style="position: fixed; top: 10px; left: 10px; color: #ccc; font-size: 12px; font-family: monospace; user-select: none; z-index: 1000;"></div>
   <h1>OSRS Crafting Profit Calculator</h1>
-  <button onclick="refreshData()">Refresh Prices</button>
-  <button onclick="toggleSkills()">Skills</button>
+
+  <button id="refresh-button">Refresh Prices</button>
+    <label style="margin-left: 1rem;">
+      <input type="checkbox" id="auto-refresh"> Auto Refresh
+      <span id="refresh-countdown" style="margin-left: 0.5rem; display: none;">(5:00)</span>
+    </label>
+  </label>
+
+  <button id="skills-button">Skills</button>
+  <label for="max-cost">Max Cost (gp):</label>
+  <input type="number" id="max-cost" placeholder="Leave blank for no limit" min="0" />
   <div id="results"></div>
 
   <h2>Custom Recipe</h2>
   <textarea id="custom-recipe" rows="5" placeholder="Example:\n1 Runite ore\n8 Coal\n= 1 Runite bar"></textarea><br>
-  <button onclick="addCustomRecipe()">Add Custom Recipe</button>
+  <button id="custom-recipe-button">Add Custom Recipe</button>
 
   <div id="skills-modal">
     <h2>Enter Skill Levels</h2>
     <div id="rsn-container">
-      <input type="text" id="rsn" placeholder="Enter your character name" onkeydown="if(event.key==='Enter'){fetchHiscores();}">
-      <button onclick="fetchHiscores()">Submit</button>
+      <input type="text" id="rsn" placeholder="Enter your character name" />
+      <button id="hiscore-button">Submit</button>
     </div>
     <div id="rsn-message" style="color: #ff5555; margin-top: 6px; font-weight: bold;"></div>
     <div id="skills-grid"></div>
     <div style="margin-top: 10px;">
       <label>
-        <input type="checkbox" id="filter-by-skills" onchange="displayResults()">
+        <input type="checkbox" id="filter-by-skills" />
         Only show recipes I can craft
       </label>
     </div>
-    <button onclick="toggleSkills()">Close</button>
+    <button id="close-skills-button">Close</button>
   </div>
   <script src="main.js"></script>
 </body>
