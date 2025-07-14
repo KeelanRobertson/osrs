@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // 'data/' for git version
   const baseCacheUrl = 'data/';
   const mappingUrl = baseCacheUrl + 'mapping.json';
   const cacheUrls = ['latest.json', '5m.json', '10m.json', '30m.json', '1h.json', '6h.json', '24h.json'].map(name => baseCacheUrl + name);
@@ -6,6 +7,57 @@ document.addEventListener("DOMContentLoaded", () => {
   let itemsById = {};
   let itemsByName = {};
   let recipes = [];
+
+  async function loadLastFetched() {
+    try {
+      const res = await fetch(baseCacheUrl + 'last_fetched.json');
+      if (!res.ok) throw new Error('Failed to load last fetched time');
+      const data = await res.json();
+      const lastFetchedDate = new Date(data.lastFetched);
+
+      const lastFetchedTime = lastFetchedDate.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      const now = new Date();
+      const checkedTime = now.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      const infoEl = document.getElementById('last-refresh-info');
+      infoEl.innerHTML = `
+        Last data update: ${lastFetchedTime}<br>
+        Last Checked: ${checkedTime}`;
+
+      localStorage.setItem('lastFetched', data.lastFetched);
+    } catch (error) {
+      console.warn('Error loading last fetched time:', error);
+    }
+  }
+
+  async function shouldFetchData() {
+    try {
+      const res = await fetch(baseCacheUrl + 'last_fetched.json');
+      if (!res.ok) throw new Error('Failed to load last fetched time');
+      const data = await res.json();
+      const remoteTimestamp = new Date(data.lastFetched);
+      
+      const localTimestampStr = localStorage.getItem('lastFetched');
+      if (!localTimestampStr) return true; // no record, fetch needed
+
+      const localTimestamp = new Date(localTimestampStr);
+      return remoteTimestamp > localTimestamp; // only fetch if newer
+    } catch (error) {
+      console.warn('Error checking if data should be fetched:', error);
+      return true; // fallback to fetching if anything goes wrong
+    }
+  }
 
   async function loadRecipes() {
     const res = await fetch(baseCacheUrl + 'recipes.json');
@@ -100,17 +152,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const filterEnabled = document.getElementById("filter-by-skills")?.checked;
     const userSkills = getUserSkillLevels();
+    const maxCostInput = document.getElementById("max-cost")?.value;
+    const maxCost = maxCostInput ? parseInt(maxCostInput) : Infinity;
 
-    const visibleRecipes = filterEnabled
-      ? recipes.filter(recipe => {
-          if (!recipe.requiredSkills) return true;
-          return Object.entries(recipe.requiredSkills).every(
-            ([skill, level]) => userSkills[skill] >= level
-          );
-        })
-      : recipes;
+    let hiddenBySkills = 0;
+    let hiddenByCost = 0;
 
-    const hiddenCount = recipes.length - visibleRecipes.length;
+    const visibleRecipes = recipes.filter(recipe => {
+      const result = calculateProfit(recipe);
+      const totalInputCost = result.inputDetails.reduce((sum, i) => sum + i.total, 0);
+
+      // Skill filtering
+      const skillPass = !filterEnabled || !recipe.requiredSkills || Object.entries(recipe.requiredSkills).every(
+        ([skill, level]) => userSkills[skill] >= level
+      );
+
+      // Cost filtering
+      const costPass = totalInputCost <= maxCost;
+
+      if (!skillPass) hiddenBySkills++;
+      if (skillPass && !costPass) hiddenByCost++; // Only count cost-hidden if skill passed
+
+      return skillPass && costPass;
+    });
 
     visibleRecipes.forEach(recipe => {
       const result = calculateProfit(recipe);
@@ -131,16 +195,22 @@ document.addEventListener("DOMContentLoaded", () => {
       container.appendChild(div);
     });
 
-    // Add hidden recipes message at the bottom
-    if (filterEnabled && hiddenCount > 0) {
+    // Add hidden messages
+    if (hiddenBySkills > 0 || hiddenByCost > 0) {
       const msg = document.createElement("div");
       msg.style.marginTop = "10px";
       msg.style.fontStyle = "italic";
       msg.style.color = "#888";
-      msg.textContent = `${hiddenCount} recipe${hiddenCount > 1 ? "s" : ""} hidden due to level requirements.`;
+
+      const parts = [];
+      if (hiddenBySkills > 0) parts.push(`${hiddenBySkills} recipe${hiddenBySkills > 1 ? "s" : ""} hidden due to level requirements`);
+      if (hiddenByCost > 0) parts.push(`${hiddenByCost} recipe${hiddenByCost > 1 ? "s" : ""} hidden due to cost limit`);
+
+      msg.textContent = parts.join(". ") + ".";
       container.appendChild(msg);
     }
   }
+
 
   function parseCustomRecipe() {
     const lines = document.getElementById("custom-recipe").value.trim().split("\n");
@@ -309,9 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
-
-
   function loadSkillLevels() {
     const savedLevels = localStorage.getItem("osrsSkillLevels");
     if (savedLevels) {
@@ -324,10 +391,93 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function refreshData() {
-    await Promise.all([fetchData(), loadRecipes()]);
-    displayResults();
+  let autoRefreshInterval = null;
+  let countdownSeconds = 299; // 5 minutes
+
+  function startAutoRefreshCountdown() {
+    // Clear any existing interval to avoid duplicates
+    clearInterval(autoRefreshInterval);
+    countdownSeconds = 299;
+    updateCountdownDisplay();
+    autoRefreshInterval = setInterval(() => {
+      countdownSeconds--;
+      updateCountdownDisplay();
+      if (countdownSeconds <= 0) {
+        if (document.getElementById("auto-refresh").checked) {
+          refreshData();
+        }
+        countdownSeconds = 299; // restart countdown
+      }
+    }, 1000);
   }
+
+  function resetAutoRefreshCountdown() {
+    clearInterval(autoRefreshInterval);
+    countdownSeconds = 299;
+    updateCountdownDisplay();
+    autoRefreshInterval = setInterval(() => {
+      countdownSeconds--;
+      updateCountdownDisplay();
+      if (countdownSeconds <= 0) {
+        refreshData();
+        countdownSeconds = 299;
+      }
+    }, 1000);
+  }
+
+
+  function updateCountdownDisplay() {
+    const countdown = document.getElementById("refresh-countdown");
+    const minutes = Math.floor(countdownSeconds / 60);
+    const seconds = countdownSeconds % 60;
+    countdown.textContent = `(${minutes}:${seconds.toString().padStart(2, "0")})`;
+  }
+
+  // Load saved auto-refresh setting
+  const savedAutoRefresh = localStorage.getItem("osrsAutoRefresh");
+  if (savedAutoRefresh !== null) {
+    document.getElementById("auto-refresh").checked = savedAutoRefresh === "true";
+  }
+
+  // Start timer if auto-refresh was enabled
+  if (document.getElementById("auto-refresh").checked) {
+    document.getElementById("refresh-countdown").style.display = "inline";
+    startAutoRefreshCountdown();
+  }
+
+  // Respond to checkbox changes
+  document.getElementById("auto-refresh").addEventListener("change", (event) => {
+    const countdown = document.getElementById("refresh-countdown");
+    const isChecked = event.target.checked;
+    localStorage.setItem("osrsAutoRefresh", isChecked);
+    if (isChecked) {
+      countdown.style.display = "inline";
+      startAutoRefreshCountdown();
+    } else {
+      clearInterval(autoRefreshInterval);
+      countdown.style.display = "none";
+    }
+  });
+
+  async function refreshData() {
+    const needsUpdate = await shouldFetchData();
+    // Force fetch if internal data hasn't been loaded yet
+    const isDataLoaded = itemsById && Object.keys(itemsById).length > 0;
+    if (needsUpdate || !isDataLoaded) {
+      console.log('Fetching updated data...');
+      await fetchData();
+      displayResults();
+    } else {
+      console.log('No update needed. Skipping fetch.');
+    }
+    loadLastFetched(); // Always show time info
+  }
+
+  // async function refreshData() {
+  //   await fetchData();
+  //   displayResults();
+  //   loadLastFetched();
+  // }
 
   function getUserSkillLevels() {
     const levels = {};
@@ -338,7 +488,55 @@ document.addEventListener("DOMContentLoaded", () => {
     return levels;
   }
 
+  loadRecipes()
   refreshData();
   createSkillInputs();
   loadSkillLevels();
+
+  // Load saved max cost
+  const savedMaxCost = localStorage.getItem("osrsMaxCost");
+  if (savedMaxCost !== null) {
+    document.getElementById("max-cost").value = savedMaxCost;
+  }
+
+  // Restore saved RSN input
+  const savedRSN = localStorage.getItem("osrsRSN");
+  if (savedRSN !== null) {
+    document.getElementById("rsn").value = savedRSN;
+  }
+
+  // Restore saved filter checkbox state
+  const savedFilterBySkills = localStorage.getItem("osrsFilterBySkills");
+  if (savedFilterBySkills !== null) {
+    document.getElementById("filter-by-skills").checked = savedFilterBySkills === "true";
+  }
+
+  document.getElementById("refresh-button").addEventListener("click", () => {
+    refreshData();
+    if (document.getElementById("auto-refresh").checked) {
+      resetAutoRefreshCountdown();
+    }
+  });
+  document.getElementById("skills-button").addEventListener("click", toggleSkills);
+  document.getElementById("hiscore-button").addEventListener("click", fetchHiscores);
+  document.getElementById("rsn").addEventListener("input", (event) => {
+    localStorage.setItem("osrsRSN", event.target.value);
+  });
+  document.getElementById("rsn").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      fetchHiscores();
+    }
+  });
+  document.getElementById("filter-by-skills").addEventListener("change", (event) => {
+    localStorage.setItem("osrsFilterBySkills", event.target.checked);
+    displayResults();
+  });
+  document.getElementById("close-skills-button").addEventListener("click", toggleSkills);
+  document.getElementById("max-cost").addEventListener("input", () => {
+    const value = document.getElementById("max-cost").value;
+    localStorage.setItem("osrsMaxCost", value);
+    displayResults();
+  });
+  document.getElementById("custom-recipe-button").addEventListener("click", addCustomRecipe);
+
 });
