@@ -23,7 +23,7 @@
   },
   {
     "name": "Bronze Bar",
-    "output": { "item": "Bronze Bar", "quantity": 1 },
+    "output": { "item": "Bronze bar", "quantity": 1 },
     "inputs": [
       { "item": "Copper Ore", "quantity": 1 },
       { "item": "Tin Ore", "quantity": 1 }
