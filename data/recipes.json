@@ -40,6 +40,16 @@
     }
   },
   {
+    "name": "Bow String",
+    "output": { "item": "Bow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Flax", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
     "name": "Magic Shortbow (Strung)",
     "output": { "item": "Magic shortbow", "quantity": 1 },
     "inputs": [
