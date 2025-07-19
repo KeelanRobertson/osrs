@@ -59,5 +59,65 @@
     "requiredSkills": {
       "Fletching": 80
     }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Sinew", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Oak roots", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Willow roots", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Maple roots", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Yew roots", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
+  },
+  {
+    "name": "Crossbow String",
+    "output": { "item": "Crossbow string", "quantity": 1 },
+    "inputs": [
+      { "item": "Magic roots", "quantity": 1 }
+    ],
+    "requiredSkills": {
+      "Crafting": 10
+    }
   }
 ]
