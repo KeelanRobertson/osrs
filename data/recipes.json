@@ -46,6 +46,7 @@
       { "item": "Flax", "quantity": 1 }
     ],
     "requiredSkills": {
+      "Crafting": 10,
       "Crafting": 10
     }
   },
