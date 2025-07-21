@@ -141,8 +141,8 @@
     "requiredEquipment": ["herbloreCape"]
   },
   {
-    "name": "Super restore (3)",
-    "output": { "item": "Super restore (3)", "quantity": 3 },
+    "name": "Super restore(3)",
+    "output": { "item": "Super restore(3)", "quantity": 1 },
     "inputs": [
       { "item": "Snapdragon potion (unf)", "quantity": 1 },
       { "item": "Red spiders' eggs", "quantity": 1 }
