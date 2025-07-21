@@ -129,7 +129,7 @@
     "name": "Ranarr potion (unf)",
     "output": { "item": "Ranarr potion (unf)", "quantity": 1 },
     "inputs": [
-      { "item": "Grimy ranarr", "quantity": 1 },
+      { "item": "Grimy ranarr weed", "quantity": 1 },
       { "item": "Vial of water", "quantity": 1 }
     ],
     "requiredSkills": { 
