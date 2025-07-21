@@ -124,5 +124,35 @@
     "requiredSkills": {
       "Crafting": 10
     }
+  },
+  {
+    "name": "Ranarr potion (unf)",
+    "output": { "item": "Ranarr potion (unf)", "quantity": 1 },
+    "inputs": [
+      { "item": "Grimy ranarr", "quantity": 1 },
+      { "item": "Vial of water", "quantity": 1 }
+    ],
+    "requiredSkills": { 
+      "Herblore": 30 
+    },
+    "experienceGained": { 
+      "Herblore": 3.7 
+    },
+    "requiredEquipment": ["herbloreCape"]
+  },
+  {
+    "name": "Super restore (3)",
+    "output": { "item": "Super restore (3)", "quantity": 3 },
+    "inputs": [
+      { "item": "Snapdragon potion (unf)", "quantity": 1 },
+      { "item": "Red spiders' eggs", "quantity": 1 }
+    ],
+    "requiredSkills": { 
+      "Herblore": 63 
+    },
+    "experienceGained": { 
+      "Herblore": 142.5 
+    },
+    "optionalEquipment": ["amuletOfChemistry"]
   }
 ]
