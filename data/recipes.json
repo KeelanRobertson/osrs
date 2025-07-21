@@ -44,7 +44,7 @@
     "output": { "item": "Bow string", "quantity": 1 },
     "inputs": [
       { "item": "Flax", "quantity": 1 },
-      { "item": "Nature rune", "quantity": 1)
+      { "item": "Nature rune", "quantity": 1}
     ],
     "requiredSkills": {
       "Crafting": 10,
