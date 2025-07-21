@@ -141,6 +141,17 @@
     "requiredEquipment": ["herbloreCape"]
   },
   {
+    "name": "Ranarr potion (unf)",
+    "output": { "item": "Ranarr potion (unf)", "quantity": 1 },
+    "inputs": [
+      { "item": "Ranarr weed", "quantity": 1 },
+      { "item": "Vial of water", "quantity": 1 }
+    ],
+    "requiredSkills": { 
+      "Herblore": 30 
+    }
+  },
+  {
     "name": "Super restore(3)",
     "output": { "item": "Super restore(3)", "quantity": 1 },
     "inputs": [
