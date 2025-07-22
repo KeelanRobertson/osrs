@@ -41,7 +41,7 @@
   },
   {
     "name": "Bow String",
-    "output": { "item": "Bow string", "quantity": 1 },
+    "output": { "item": "Bow string", "quantity": 2 },
     "inputs": [
       { "item": "Flax", "quantity": 1 },
       { "item": "Nature rune", "quantity": 1}
