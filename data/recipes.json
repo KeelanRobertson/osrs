@@ -56,6 +56,22 @@
     }
   },
   {
+    "name": "Bow String",
+    "output": { "item": "Bow string", "quantity": 2 },
+    "inputs": [
+      { "item": "Flax", "quantity": 2 },
+      { "item": "Nature rune", "quantity": 1}
+    ],
+    "requiredSkills": {
+      "Crafting": 10,
+      "Construction": 11
+    },
+    "experienceGained": {
+      "Crafting": 1000,
+      "Construction": 750
+    }
+  },
+  {
     "name": "Magic Shortbow (Strung)",
     "output": { "item": "Magic shortbow", "quantity": 1 },
     "inputs": [
