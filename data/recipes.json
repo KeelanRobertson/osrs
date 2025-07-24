@@ -161,8 +161,8 @@
     "name": "Ranarr potion (unf)",
     "output": { "item": "Ranarr potion (unf)", "quantity": 1 },
     "inputs": [
-      { "item": "Ranarr weed", "quantity": 1 },
-      { "item": "Vial of water", "quantity": 1 }
+      { "item": "Ranarr weed", "quantity": 2 },
+      { "item": "Vial of water", "quantity": 1.33 }
     ],
     "requiredSkills": { 
       "Herblore": 30 
