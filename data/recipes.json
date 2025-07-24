@@ -146,8 +146,8 @@
     "name": "Ranarr potion (unf)",
     "output": { "item": "Ranarr potion (unf)", "quantity": 1 },
     "inputs": [
-      { "item": "Grimy ranarr weed", "quantity": 1 },
-      { "item": "Vial of water", "quantity": 1 }
+      { "item": "Grimy ranarr weed", "quantity": 1.33 },
+      { "item": "Vial of water", "quantity": 1.33 }
     ],
     "requiredSkills": { 
       "Herblore": 30 
