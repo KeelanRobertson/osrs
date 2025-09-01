@@ -8,6 +8,8 @@ on:
 jobs:
   update-prices:
     runs-on: ubuntu-latest
+    env:
+      USER_AGENT: "OSRS Item Recipe Calculator (contact: keelanrobertson98@gmail.com; https://keelanrobertson.github.io/osrs/)"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
