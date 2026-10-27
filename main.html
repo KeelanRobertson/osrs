@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OSRS Crafting Profit Calculator</title>
+  <style>
+    /* Remove number input spinners */
+    /* Chrome, Safari, Edge, Opera */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Firefox */
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1500px;
+      margin: auto;
+      background-color: #28221d;
+      color: #ffffff;
+    }
+    h1, h2, h3 {
+      color: #ffffff;
+    }
+    .positive {
+      color: #00ff00;
+    }
+    .negative {
+      color: #ff5555;
+    }
+    textarea {
+      width: 100%;
+      font-family: monospace;
+      margin-top: 10px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #666;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      margin-bottom: 10px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    #filters-modal {
+      display:none;
+      position:fixed;
+      top:10%;
+      left:50%;
+      transform:translateX(-50%);
+      background:#2b2b2b;
+      color:#f0f0f0;
+      border:1px solid #555;
+      padding:20px;
+      border-radius:10px;
+      z-index:999;
+      max-width: 850px;
+    }
+    #skills-grid {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(8, auto);
+      gap: 10px;
+      max-width: 360px;
+    }
+    .skill-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #222;
+      padding: 6px 10px;
+      border-radius: 4px;
+      color: white;
+    }
+    .skill-input-wrapper img.skill-icon {
+      width: 24px;
+      height: 24px;
+    }
+    .skill-input-wrapper input[type="number"] {
+      flex: 1;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 3px;
+      padding: 2px 6px;
+    }
+
+    #skills-grid label {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    #total-level {
+      padding: 6px;
+      border: 1px solid #555;
+      background: #333;
+      text-align: center;
+      font-weight: bold;
+      user-select: none;
+      margin-top: 22px;
+    }
+    #rsn-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    #rsn-container input {
+      flex-grow: 1;
+    }
+
+    .recipe-header, .recipe-summary {
+      display: grid;
+      grid-template-columns: 45px 20% 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 4em 40px;
+      align-items: center;
+      gap: 10px;
+      padding: 0px;
+      cursor: pointer;
+    }
+
+    .recipe-header {
+      background-color: #312a25;
+      font-weight: bold;
+      border-bottom: 1px solid #312a25;
+      color: #fff;
+    }
+
+    .recipe-row {
+      padding: 8px 0;
+      /* height: 32px; */
+    }
+
+    .recipe-row:nth-child(even), .recipe-row:nth-child(odd) .alt-row {
+      background-color: #3e362f;
+    }
+
+    .recipe-row:nth-child(odd), .recipe-row:nth-child(even) .alt-row {
+      background-color: #4a4038;
+    }
+
+    .header-cell, .recipe-cell {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .recipe-summary {
+      height: 32px;
+    }
+    .recipe-summary span {
+      white-space: nowrap;
+    }
+    .recipe-summary .item-icon {
+      max-height: 38px; /* instead of 32–40px */
+      max-width: 38px;
+    }
+    .recipe-cell.icon-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px; /* or however wide the icon cell is */
+      height: 40px;
+    }
+
+    .item-icon {
+      margin-top: -4px;
+      margin-left: 5px;
+      margin-right: 5px;
+      max-width: 40px;
+      max-height: 40px;
+      height: auto;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .recipe-details {
+      margin-left: 48px;
+      margin-right: 48px;
+      padding-top: 6px;
+    }
+
+    .recipe-details.hidden {
+      display: none;
+    }
+
+    .input-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0px;
+      margin-top: 6px;
+      border-top: 1px solid #312a25;
+    }
+
+    .input-item-header, .input-item-row, .recipe-total-row {
+      display: grid;
+      grid-template-columns: 36px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #312a25;
+      border-left: 1px solid #312a25;
+      border-right: 1px solid #312a25;
+      min-width: 100px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .input-item-row span, .recipe-output-row span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recipe-total-row {
+      display: grid;
+      grid-template-columns: calc((100% - 36px)/4 + 36px) 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    
+    .recipe-output-row {
+      display: grid;
+      grid-template-columns: 36px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border: 1px solid #312a25;
+      border-top: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .input-item-header {
+      font-weight: bold;
+      border-bottom: 1px solid #312a25;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .input-item-row img.item-icon, .recipe-output-row img.item-icon {
+      width: 32px;
+      height: 32px;
+      margin-right: 6px;
+    }
+
+    .input-item-header span, .input-item-row span, .recipe-total-row span, .recipe-output-row span {
+      min-width: 100px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    #toggle-all {
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    #last-refresh-info span {
+      font-weight: bold;
+    }
+    #refresh-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    }
+    .refresh-countdown {
+      margin-left: 0.5rem;
+      display: none;
+    }
+
+    #refresh-controls {
+      margin-bottom: 1rem;
+    }
+
+    .refresh-layout {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    #last-refresh-info {
+      font-size: 0.85rem;
+      color: #aaa;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      height: 48px;
+      justify-content: space-between;
+      min-width: 165px;
+    }
+
+    .refresh-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    #refresh-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 4px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: -12px;
+      border: 1px solid #aaa;
+    }
+
+    #refresh-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .auto-refresh-label {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #last-refresh-info .auto-refresh-label {
+      margin-left: -3px;
+    }
+    .price-icon {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+    .skill-icon-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      /* margin-bottom: 5px;
+      margin-top: 5px; */
+      height: 20px;
+    }
+    .skill-icon-row .skill-icon {
+      width: 18px;
+      height: 18px;
+    }
+    .missing-skill {
+      color: #ff5555;
+    }
+      .custom-select {
+    position: relative;
+    width: 200px;
+    user-select: none;
+    }
+    .select-selected {
+      background-color: #1e1e1e;
+      padding: 8px 12px;
+      border: 1px solid #aaa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .select-selected img {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+    }
+    .select-items {
+      position: absolute;
+      background-color: #1e1e1e;
+      border: 1px solid #aaa;
+      border-top: none;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 99;
+      display: none;
+    }
+    .select-items div {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .select-items div:hover {
+      background-color: #ddd;
+    }
+    .select-items img {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+
+
+  <div id="refresh-controls">
+    <div class="refresh-layout">
+      <div class="refresh-actions">
+        <button id="refresh-button" title="Refresh Prices">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 12l-4.463 4.969-4.537-4.969h3c0-4.97 4.03-9 9-9
+                    2.395 0 4.565.942 6.179 2.468l-2.004 2.231c-1.081-1.05-2.553-1.699-4.175-1.699
+                    -3.309 0-6 2.691-6 6h3zm10.463-4.969l-4.463 4.969h3c0
+                    3.309-2.691 6-6 6-1.623 0-3.094-.65-4.175-1.699l-2.004
+                    2.231c1.613 1.526 3.784 2.468 6.179 2.468 4.97 0
+                    9-4.03 9-9h3l-4.537-4.969z"/>
+          </svg>
+        </button>
+      </div>
+      <div id="last-refresh-info">
+        <div>Last data update: <span id="last-fetched-time"></span></div>
+        <div>Last checked: <span id="last-checked-time"></span></div>
+        <label class="auto-refresh-label">
+          <input type="checkbox" id="auto-refresh"> Auto-refresh
+          <span id="refresh-countdown"></span>
+        </label>
+      </div>
+      
+    </div>
+  </div>
+
+
+
+  <h1>OSRS Crafting Profit Calculator</h1>
+  <label>
+    <input type="checkbox" id="use-alch-profit">
+    Use High Alch value for profit
+  </label>
+  <label>
+    <input type="checkbox" id="use-optimal-price">
+    Use optimal buy/sell prices
+  </label>
+
+  <button id="filters-button">Filters</button>
+
+  <div id="xp-skill-filter-container"></div>
+
+  <div style="margin-bottom: 1em;">
+    <label for="search-box"></label>
+    <input type="text" id="search-box" placeholder="Search for an item..." />
+  </div>
+
+  <div id="pagination-controls">
+    <label for="results-per-page">Show:</label>
+    <select id="results-per-page">
+      <option value="25">25</option>
+      <option value="50" selected>50</option>
+      <option value="100">100</option>
+      <option value="200">200</option>
+    </select>
+    <button id="prev-page">Prev</button>
+    <span id="page-info"></span>
+    <button id="next-page">Next</button>
+  </div>
+
+  <div id="results-container"></div>
+  <span id="skill-filter-count" style="color: #888;"></span>
+  <span id="cost-filter-count" style="color: #888;"></span>
+
+  <h2>Custom Recipe</h2>
+  <textarea id="custom-recipe" rows="5" placeholder="Example:\n1 Runite ore\n8 Coal\n= 1 Runite bar"></textarea><br>
+  <button id="custom-recipe-button">Add Custom Recipe</button>
+
+  <div id="filters-modal">
+    <h2>Enter Skill Levels</h2>
+    <div id="rsn-container">
+      <input type="text" id="rsn" placeholder="Enter your character name" />
+      <button id="hiscore-button">Submit</button>
+    </div>
+    <div id="rsn-message" style="color: #ff5555; margin-top: 6px; font-weight: bold;"></div>
+    <div id="skills-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Attack_icon.png" alt="Attack" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="attack">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Defence_icon.png" alt="Defence" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="defence">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Strength_icon.png" alt="Strength" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="strength">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Hitpoints_icon.png" alt="Hitpoints" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="hitpoints">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Ranged_icon.png" alt="Ranged" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="ranged">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Prayer_icon.png" alt="Prayer" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="prayer">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Magic_icon.png" alt="Magic" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="magic">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Cooking_icon.png" alt="Cooking" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="cooking">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Woodcutting_icon.png" alt="Woodcutting" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="woodcutting">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Fletching_icon.png" alt="Fletching" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="fletching">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Fishing_icon.png" alt="Fishing" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="fishing">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Firemaking_icon.png" alt="Firemaking" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="firemaking">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Crafting_icon.png" alt="Crafting" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="crafting">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Smithing_icon.png" alt="Smithing" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="smithing">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Mining_icon.png" alt="Mining" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="mining">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Herblore_icon.png" alt="Herblore" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="herblore">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Agility_icon.png" alt="Agility" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="agility">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Thieving_icon.png" alt="Thieving" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="thieving">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Slayer_icon.png" alt="Slayer" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="slayer">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Farming_icon.png" alt="Farming" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="farming">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Runecraft_icon.png" alt="Runecraft" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="runecraft">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Hunter_icon.png" alt="Hunter" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="hunter">
+      </div>
+      <div class="skill-input-wrapper">
+        <img src="https://oldschool.runescape.wiki/images/Construction_icon.png" alt="Construction" class="skill-icon" width="20">
+        <input type="number" min="1" max="99" value="99" data-skill="construction">
+      </div>
+
+      <!-- Total Level Display -->
+      <div class="skill-input-wrapper total-level" style="grid-column: 3; grid-row: 8; justify-content: center;">
+        <label style="margin-right: 10px;">Total Level:</label>
+        <div id="total-level">2277</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <label>
+        <input type="checkbox" id="filter-by-skills" />
+        Only show recipes I can craft
+      </label>
+    </div>
+    <div class="filter-cost">
+      <label for="max-cost">Max Cost (gp):</label>
+      <input type="number" id="max-cost" placeholder="Leave blank for no limit" min="0" />
+    </div>
+    <div id="equipment-toggle">
+      <label>
+        <input type="checkbox" id="equip-herbloreCape">
+        Herblore Cape
+      </label>
+    </div>
+    <button id="close-filters-button">Close</button>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
